@@ -12,9 +12,14 @@ spring:
           httpclient:
             connect-timeout: 10000
             response-timeout: 60s
+          # Orden de evaluación: menor order = se evalúa primero y gana el primer match.
+          #   -1  bloqueos (siempre ganan)
+          #    0  excepciones (paths compartidos entre módulos)
+          #    1  rutas generales de cada módulo
+          # Ningún módulo usa context-path: los paths llegan tal cual, sin StripPrefix.
+          # En Render, las URLs de cada módulo se definen como variables de entorno.
           routes:
-            # /reset borra la base de datos (solo se usa directo contra el servicio, para testear).
-            # Menor order = se evalúa primero, así que esta ruta gana aunque se agregue un catch-all.
+            # /reset borra la base de datos de cada módulo (solo se usa directo contra el servicio, para testear).
             - id: bloquear-reset
               uri: no://op
               order: -1
@@ -23,13 +28,27 @@ spring:
               filters:
                 - SetStatus=403
 
-            # Incentivos no usa context-path: los paths llegan tal cual, sin StripPrefix.
-            # En Render, INCENTIVOS_URL se define como variable de entorno.
+            # DELETE /insigniasDonador/{id}/{insigniaID} solo existe en Donadores y Entidades.
+            # El resto de /insigniasDonador/** (POST y GET) es de Incentivos.
+            - id: donadores-y-entidades-quitar-insignia
+              uri: ${DONADORES_Y_ENTIDADES_URL:http://localhost:8082}
+              order: 0
+              predicates:
+                - Path=/insigniasDonador/{id}/{insigniaID}
+                - Method=DELETE
+
+            - id: donadores-y-entidades
+              uri: ${DONADORES_Y_ENTIDADES_URL:http://localhost:8082}
+              order: 1
+              predicates:
+                - Path=/donadores/**,/entidades/**,/necesidades/**
+
             - id: incentivos
               uri: ${INCENTIVOS_URL:http://localhost:8083}
+              order: 1
               predicates:
                 - Path=/insignias/**,/insigniasDonador/**,/misiones/**,/misionesDonador/**,/procesamiento/**,/ping
-          # TODO: donadores-y-entidades, donaciones y logistica
+          # TODO: donaciones y logistica
 
 management:
   endpoints:
@@ -40,4 +59,5 @@ management:
     health:
       show-details: always
     gateway:
-      access: unrestricted
+      # read-only: se pueden ver las rutas, pero nadie puede crearlas ni borrarlas (ej: el bloqueo de /reset).
+      access: read-only
