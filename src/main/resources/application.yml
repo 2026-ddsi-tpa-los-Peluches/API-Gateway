@@ -1,0 +1,43 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          # Render free tarda en "despertar" un servicio dormido: damos margen.
+          httpclient:
+            connect-timeout: 10000
+            response-timeout: 60s
+          routes:
+            # /reset borra la base de datos (solo se usa directo contra el servicio, para testear).
+            # Menor order = se evalúa primero, así que esta ruta gana aunque se agregue un catch-all.
+            - id: bloquear-reset
+              uri: no://op
+              order: -1
+              predicates:
+                - Path=/reset,/reset/**
+              filters:
+                - SetStatus=403
+
+            # Incentivos no usa context-path: los paths llegan tal cual, sin StripPrefix.
+            # En Render, INCENTIVOS_URL se define como variable de entorno.
+            - id: incentivos
+              uri: ${INCENTIVOS_URL:http://localhost:8083}
+              predicates:
+                - Path=/insignias/**,/insigniasDonador/**,/misiones/**,/misionesDonador/**,/procesamiento/**,/ping
+          # TODO: donadores-y-entidades, donaciones y logistica
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+  endpoint:
+    health:
+      show-details: always
+    gateway:
+      access: unrestricted
