@@ -48,7 +48,19 @@ spring:
               order: 1
               predicates:
                 - Path=/insignias/**,/insigniasDonador/**,/misiones/**,/misionesDonador/**,/procesamiento/**,/ping
-          # TODO: donaciones y logistica
+            # Donaciones: /donadores existe como controller pero no tiene endpoints activos (es de Donadores y Entidades).
+            - id: donaciones
+              uri: ${DONACIONES_URL:http://localhost:8081}
+              order: 1
+              predicates:
+                - Path=/donaciones/**,/productos/**,/categorias/**,/identificadores/**
+
+            # Logística: se expone todo menos /reset (bloqueado arriba).
+            - id: logistica
+              uri: ${LOGISTICA_URL:http://localhost:8084}
+              order: 1
+              predicates:
+                - Path=/paquetes/**,/asignaciones/**,/stock/**,/depositos/**,/hola
 
 management:
   endpoints:
