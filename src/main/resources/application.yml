@@ -62,6 +62,16 @@ spring:
               predicates:
                 - Path=/paquetes/**,/asignaciones/**,/stock/**,/depositos/**,/hola
 
+            # Consultas (read model en MongoDB): solo lectura. Los módulos publican eventos a la cola,
+            # el servicio los guarda en Mongo y acá se consultan. Sus paths (/analitica/**, /consultas/**)
+            # no se pisan con los de ningún otro módulo, y Method=GET garantiza que nunca reciba escrituras.
+            - id: consultas
+              uri: ${SERVICIO_CONSULTA_URL:http://localhost:8085}
+              order: 1
+              predicates:
+                - Method=GET
+                - Path=/analitica/**,/consultas/**
+
 management:
   endpoints:
     web:
