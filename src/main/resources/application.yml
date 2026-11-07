@@ -60,7 +60,7 @@ spring:
               order: 1
               predicates:
                 - Method=POST,PATCH,PUT,DELETE
-                - Path=/donaciones/**,/productos/**,/categorias/**,/identificadores/**
+                - Path=/donaciones/**,/productos/**,/categorias/**,/subcategorias/**,/identificadores/**
 
             # Logística: se expone todo menos /reset (bloqueado arriba).
             - id: logistica
@@ -78,7 +78,7 @@ spring:
               order: 1
               predicates:
                 - Method=GET
-                - Path=/analitica/**,/consultas/**,/donadores/**,/entidades/**,/necesidades/**,/insignias/**,/insigniasDonador/**,/misiones/**,/misionesDonador/**,/procesamiento/**,/ping,/donaciones/**,/productos/**,/categorias/**,/identificadores/**,/paquetes/**,/asignaciones/**,/stock/**,/depositos/**,/hola
+                - Path=/analitica/**,/consultas/**,/donadores/**,/entidades/**,/necesidades/**,/insignias/**,/insigniasDonador/**,/misiones/**,/misionesDonador/**,/procesamiento/**,/ping,/donaciones/**,/productos/**,/categorias/**,/subcategorias/**,/identificadores/**,/paquetes/**,/asignaciones/**,/stock/**,/depositos/**,/hola
 
 management:
   endpoints:
