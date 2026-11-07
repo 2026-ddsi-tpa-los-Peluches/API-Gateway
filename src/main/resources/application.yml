@@ -16,6 +16,9 @@ spring:
           #   -1  bloqueos (siempre ganan)
           #    0  excepciones (paths compartidos entre módulos)
           #    1  rutas generales de cada módulo
+          # Lecturas vs. escrituras: TODOS los GET van al servicio de Consultas (read model en MongoDB),
+          # sin importar de qué módulo es el path. Los módulos de escritura solo reciben
+          # POST, PATCH, PUT y DELETE (DELETE se conserva para no romper los borrados que ya existen).
           # Ningún módulo usa context-path: los paths llegan tal cual, sin StripPrefix.
           # En Render, las URLs de cada módulo se definen como variables de entorno.
           routes:
@@ -29,7 +32,7 @@ spring:
                 - SetStatus=403
 
             # DELETE /insigniasDonador/{id}/{insigniaID} solo existe en Donadores y Entidades.
-            # El resto de /insigniasDonador/** (POST y GET) es de Incentivos.
+            # El resto de /insigniasDonador/** (POST) es de Incentivos.
             - id: donadores-y-entidades-quitar-insignia
               uri: ${DONADORES_Y_ENTIDADES_URL:http://localhost:8082}
               order: 0
@@ -41,18 +44,22 @@ spring:
               uri: ${DONADORES_Y_ENTIDADES_URL:http://localhost:8082}
               order: 1
               predicates:
+                - Method=POST,PATCH,PUT,DELETE
                 - Path=/donadores/**,/entidades/**,/necesidades/**
 
             - id: incentivos
               uri: ${INCENTIVOS_URL:http://localhost:8083}
               order: 1
               predicates:
+                - Method=POST,PATCH,PUT,DELETE
                 - Path=/insignias/**,/insigniasDonador/**,/misiones/**,/misionesDonador/**,/procesamiento/**,/ping
+
             # Donaciones: /donadores existe como controller pero no tiene endpoints activos (es de Donadores y Entidades).
             - id: donaciones
               uri: ${DONACIONES_URL:http://localhost:8081}
               order: 1
               predicates:
+                - Method=POST,PATCH,PUT,DELETE
                 - Path=/donaciones/**,/productos/**,/categorias/**,/identificadores/**
 
             # Logística: se expone todo menos /reset (bloqueado arriba).
@@ -60,17 +67,18 @@ spring:
               uri: ${LOGISTICA_URL:http://localhost:8084}
               order: 1
               predicates:
+                - Method=POST,PATCH,PUT,DELETE
                 - Path=/paquetes/**,/asignaciones/**,/stock/**,/depositos/**,/hola
 
-            # Consultas (read model en MongoDB): solo lectura. Los módulos publican eventos a la cola,
-            # el servicio los guarda en Mongo y acá se consultan. Sus paths (/analitica/**, /consultas/**)
-            # no se pisan con los de ningún otro módulo, y Method=GET garantiza que nunca reciba escrituras.
+            # Consultas (read model en MongoDB): atiende los GET de TODOS los módulos. Los módulos publican
+            # eventos a la cola, el servicio los guarda en Mongo y acá se consultan. Method=GET garantiza
+            # que nunca reciba escrituras, y como los módulos de arriba excluyen GET, no hay solapamiento.
             - id: consultas
               uri: ${SERVICIO_CONSULTA_URL:http://localhost:8085}
               order: 1
               predicates:
                 - Method=GET
-                - Path=/analitica/**,/consultas/**
+                - Path=/analitica/**,/consultas/**,/donadores/**,/entidades/**,/necesidades/**,/insignias/**,/insigniasDonador/**,/misiones/**,/misionesDonador/**,/procesamiento/**,/ping,/donaciones/**,/productos/**,/categorias/**,/identificadores/**,/paquetes/**,/asignaciones/**,/stock/**,/depositos/**,/hola
 
 management:
   endpoints:
